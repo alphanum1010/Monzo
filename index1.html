@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monzo forecasting role: 30-day trail</title>
+<meta name="description" content="A 30-day study tracker for the Monzo forecasting role: nine skills, daily tasks, checkboxes and saved progress.">
+<style>
+:root{
+  --paper:#F2F5F3; --surface:#FFFFFF; --ink:#13222C; --muted:#56666E; --line:#C9D3CF;
+  --done:#0E7C6B; --accent:#D63B26; --grid:rgba(19,34,44,.05);
+  --display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --paper:#0E181E; --surface:#15242C; --ink:#E7EFEB; --muted:#9BAAB0; --line:#2B3C44; --done:#3CC8AC; --accent:#FF7A63; --grid:rgba(231,239,235,.05); }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+.wrap{max-width:760px;margin:0 auto;padding:28px 18px 72px}
+h1{font-family:var(--display);font-size:clamp(2rem,7vw,3rem);line-height:1.08;margin:0 0 10px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:0 0 22px;color:var(--muted);max-width:56ch}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);margin-bottom:22px}
+.stat{padding:12px 10px 12px 0}
+.stat+.stat{padding-left:12px;border-left:1px solid var(--line)}
+.stat b{display:block;font-family:var(--display);font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem;color:var(--muted)}
+h2.trailh{font-family:var(--display);font-size:1.15rem;margin:0 0 4px}
+.trailnote{margin:0 0 10px;font-size:.88rem;color:var(--muted)}
+.trail{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:22px}
+.dot{--c:#888;--p:0;position:relative;aspect-ratio:1;min-height:30px;border:2px solid var(--c);border-radius:50%;
+  background:linear-gradient(to top,color-mix(in srgb,var(--c) 42%,transparent) calc(var(--p)*1%),transparent 0);
+  color:var(--ink);font:600 .74rem/1 var(--body);cursor:pointer;padding:0;font-variant-numeric:tabular-nums}
+.dot.full{background:var(--c);color:#fff}
+.dot.today{outline:3px solid var(--accent);outline-offset:2px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:34px}
+button.btn,.btn{font:600 .92rem var(--body);min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+button.btn.primary{background:var(--ink);color:var(--paper)}
+.chk{display:flex;align-items:center;gap:8px;font-size:.92rem;min-height:44px}
+.chk input{width:20px;height:20px;accent-color:var(--done)}
+.date{display:flex;align-items:center;gap:8px;font-size:.92rem}
+.date input{font:inherit;min-height:44px;padding:0 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+
+.skill{--c:#888;position:relative;padding-left:38px;margin-bottom:38px}
+.skill::before{content:"";position:absolute;left:11px;top:0;bottom:-38px;width:2px;background:var(--line)}
+.skill:last-of-type::before{bottom:0}
+.skillhead{position:sticky;top:0;z-index:5;background:var(--paper);padding:10px 0 10px;margin-left:-38px;padding-left:38px;border-bottom:2px solid var(--c)}
+.skillhead::before{content:"";position:absolute;left:0;top:14px;width:24px;height:24px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px var(--paper)}
+.skillhead h2{font-family:var(--display);font-size:1.3rem;line-height:1.2;margin:0}
+.skillmeta{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:.84rem;color:var(--muted);margin-top:2px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--c);transition:width .25s}
+.about{margin:14px 0 6px}
+.finish,.skip{margin:0 0 6px;font-size:.92rem}
+.finish b{color:var(--ink)}
+.skip{color:var(--muted)}
+
+.day{position:relative;padding:16px 0 12px;border-bottom:1px solid var(--line)}
+.day::before{content:attr(data-n);position:absolute;left:-38px;top:16px;width:24px;height:24px;border-radius:50%;background:var(--paper);border:2px solid var(--c);display:grid;place-items:center;font:700 .7rem var(--body);font-variant-numeric:tabular-nums;z-index:1}
+.day.done::before{background:var(--done);border-color:var(--done);color:#fff}
+.day.today::before{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+.dayhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.dayhead h3{font-size:1.02rem;margin:0;font-weight:700}
+.daymeta{font-size:.82rem;color:var(--muted)}
+.tag{font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:99px;border:1.5px solid var(--accent);color:var(--accent)}
+.daynote{margin:3px 0 8px;font-style:italic;color:var(--muted);font-size:.92rem}
+.day.done .daynote{opacity:.7}
+ul.tasks{list-style:none;margin:0;padding:0}
+.task{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px dashed var(--line);cursor:pointer}
+.task:first-child{border-top:0}
+.task input{flex:none;width:26px;height:26px;margin:1px 0 0;accent-color:var(--done);cursor:pointer}
+.tbody{flex:1;min-width:0}
+.ttext{display:block}
+.task.on .ttext{text-decoration:line-through;color:var(--muted)}
+.hint{display:block;font-size:.82rem;color:var(--muted);margin-top:2px}
+.tmeta{flex:none;text-align:right;font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.badges{display:block;margin-top:3px}
+.b{display:inline-block;font-size:.7rem;font-weight:700;padding:0 6px;margin-left:4px;border-radius:4px;border:1.5px solid currentColor}
+.b.c{color:#8A5A00}.b.f{color:var(--done)}.b.p{color:var(--accent)}
+@media (prefers-color-scheme:dark){.b.c{color:#E9B24A}}
+.doneon{display:block;color:var(--done)}
+details.notes{margin-top:6px}
+details.notes summary{font-size:.84rem;color:var(--muted);cursor:pointer;min-height:32px;display:flex;align-items:center}
+details.notes textarea{width:100%;min-height:70px;font:inherit;font-size:.92rem;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+body.hide-done .day.done{display:none}
+.foot{margin-top:10px;font-size:.84rem;color:var(--muted);border-top:2px solid var(--ink);padding-top:12px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (max-width:520px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(3){padding-left:0;border-left:0}
+  .stat:nth-child(n+3){border-top:1px solid var(--line)}
+  .skill{padding-left:34px}.skillhead{margin-left:-34px;padding-left:34px}
+  .day::before{left:-34px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Monzo forecasting role: 30-day trail</h1>
+  <p class="sub" id="sub">Learn only what the job uses. Nine skills, about 2 hours a day. Tick tasks as you finish them; your progress is saved on this device.</p>
+
+  <div class="stats" aria-label="Progress">
+    <div class="stat"><b id="sTasks">0/0</b><span>tasks done</span></div>
+    <div class="stat"><b id="sHours">0/0</b><span>hours done</span></div>
+    <div class="stat"><b id="sDays">0/30</b><span>days complete</span></div>
+    <div class="stat"><b id="sPct">0%</b><span>of the plan</span></div>
+  </div>
+
+  <h2 class="trailh">The 30-day trail</h2>
+  <p class="trailnote">One circle per day, coloured by skill. It fills as you tick tasks. Tap a circle to jump to that day.</p>
+  <div class="trail" id="trail"></div>
+
+  <div class="controls">
+    <button class="btn primary" id="jump" type="button">Jump to today</button>
+    <label class="chk"><input type="checkbox" id="hideDone"> Hide finished days</label>
+    <label class="date">Start date <input type="date" id="start"></label>
+    <button class="btn" id="copy" type="button">Copy progress summary</button>
+    <button class="btn" id="reset" type="button">Reset progress</button>
+  </div>
+
+  <main id="main"></main>
+
+  <p class="foot">Progress and notes are saved in this browser only. Clearing the browser data, or using another phone, starts you from zero, so use Copy progress summary to keep a record.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var SKILLS=[
+ {id:1,name:"Forecasting and finance basics",c:"#1F5FCC",from:1,to:4,hours:8,
+  about:"How a bank earns and loses money, then a small model that predicts it.",
+  finish:"A 12-month loan-book forecast in Google Sheets with base and adverse cases, a sensitivity table and a one-page model note.",
+  skip:"DCF valuation, M&A and LBO models."},
+ {id:2,name:"Credit risk",c:"#C0392B",from:5,to:8,hours:8,
+  about:"How banks estimate loan losses (IFRS 9), why they hold capital (ICAAP) and how stress tests work.",
+  finish:"ECL worked out for 3 loans under 3 scenarios, a stress-test note, and your forecast stressed with an unemployment shock.",
+  skip:"Full Basel rules, market risk, derivatives."},
+ {id:3,name:"Statistics and time series",c:"#0B7F70",from:9,to:11,hours:6,
+  about:"The statistics behind a forecast: trend, seasonality and how wrong a forecast is.",
+  finish:"A 6-month trend forecast, tested against data you held back, with the error measured.",
+  skip:"Advanced ARIMA maths and deep learning."},
+ {id:4,name:"Model governance",c:"#6A49C8",from:12,to:12,hours:2,
+  about:"What makes a model something a bank can trust: documentation, checks and change control.",
+  finish:"A model documentation pack a validator or auditor could read.",
+  skip:"Writing regulations and legal theory."},
+ {id:5,name:"SQL and dbt",c:"#A86400",from:13,to:18,hours:12,
+  about:"Ask data questions in SQL (BigQuery style) and meet dbt, the tool Monzo uses to organise queries.",
+  finish:"One commented file with your monthly loan-book query, a dbt-style staging and final query, and an ECL-per-loan query.",
+  skip:"Stored procedures and database admin."},
+ {id:6,name:"Python for models",c:"#146FA8",from:19,to:23,hours:10,
+  about:"Python for forecasting: pandas, regression, a default model and ECL per loan.",
+  finish:"One clean notebook that runs your forecast, a default-probability model and ECL per loan.",
+  skip:"Deep learning and web scraping."},
+ {id:7,name:"Data visualisation",c:"#A82D84",from:24,to:25,hours:4,
+  about:"Turn your results into a clear chart and a small web app.",
+  finish:"A Streamlit app online with a scenario selector and a chart.",
+  skip:"Complex dashboard design."},
+ {id:8,name:"Tools to recognise",c:"#4C7A12",from:26,to:26,hours:2,
+  about:"Know what GitHub, Google Cloud, BigQuery and Anaplan are, and put your work on GitHub.",
+  finish:"Your project on GitHub with a README.",
+  skip:"Cloud administration and Kubernetes."},
+ {id:9,name:"Communication and interviews",c:"#C2501B",from:27,to:30,hours:8,
+  about:"Explain numbers in plain English and rehearse the four interview stages.",
+  finish:"Two mock interviews done, your answers prepared, and your resume updated with only what you completed.",
+  skip:"Long slide decks and jargon-heavy answers."}
+];
+
+/* day: [number, one-line note, [ [minutes, text, flags(c=checkpoint f=finish p=proof), hint], ... ]] */
+var DAYS=[
+[1,"Start with how a bank earns and loses money, then begin your first model.",[
+ [30,"Learn the basics of a bank's income statement and balance sheet: loans, interest income, impairments"],
+ [30,"Learn what a driver-based forecast is (volume x rate) and write 3 examples","","Forecast from the things that drive the number, such as loans x average balance."],
+ [60,"Start a loan-book forecast in Sheets: opening balance, new loans, repayments, closing balance for 12 months"]]],
+[2,"Make the model tidy: keep assumptions in one place so you can change them safely.",[
+ [30,"Move all assumptions to their own sheet and link the forecast to it"],
+ [60,"Finish the base case and check the balances add up"],
+ [30,"Add interest income to the model"]]],
+[3,"Ask what happens if things go badly: add an adverse case and a sensitivity table.",[
+ [45,"Add an adverse case (higher defaults, slower growth)"],
+ [45,"Add a scenario selector (a dropdown)"],
+ [30,"Build a sensitivity table: change one assumption and see the result","","Shows how the answer moves when one assumption moves."]]],
+[4,"Test the model against reality, then write it up.",[
+ [30,"Backtest on a small actual-versus-forecast table and calculate the percentage error","","Backtesting means checking a forecast against what really happened."],
+ [45,"Add checks: do the balances reconcile, are any values negative?"],
+ [15,"Answer from memory: what is a driver, base versus adverse, why backtest, what a sensitivity table shows, what impairment is","c"],
+ [30,"Write the one-page model note: purpose, assumptions, limits and checks","fp"]]],
+[5,"Learn the three IFRS 9 stages and the expected credit loss formula.",[
+ [45,"Learn IFRS 9 stages 1, 2 and 3 and what moves a loan between them","","Stage 2 means credit risk has risen a lot since the loan was made."],
+ [45,"Learn ECL = PD x LGD x EAD and define each part in one line","","PD: chance of default. LGD: share lost if it defaults. EAD: amount owed at default."],
+ [30,"Work out ECL by hand for one loan"]]],
+[6,"Scale the formula up: three loans, three scenarios.",[
+ [45,"Put 3 example loans in a Sheets table with PD, LGD, EAD and ECL","p"],
+ [45,"Learn scenario weighting: combine 3 scenarios with chosen weights into one ECL"],
+ [30,"Learn the difference between 12-month and lifetime ECL (stage 1 versus stage 2)"]]],
+[7,"Understand why banks hold capital and how they stress test it.",[
+ [45,"Learn what ICAAP is and why a bank holds capital against credit risk","","ICAAP is the bank's own yearly check that it holds enough capital."],
+ [45,"Learn what stress testing is and how it differs from a normal forecast"],
+ [30,"Read a summary of an EBA stress test"]]],
+[8,"Apply a shock to your own forecast and watch impairments move.",[
+ [45,"Write a one-page note on how a stress test works","p"],
+ [15,"Answer from memory: what moves a loan to stage 2, what PD, LGD and EAD are, what ICAAP is for, why weight scenarios, what a stress test is","c"],
+ [60,"Apply an unemployment shock to your Skill 1 forecast and show the effect on impairments","f"]]],
+[9,"Get comfortable with the statistics behind forecasts.",[
+ [40,"Learn mean, median, spread and correlation, and calculate them on a small loan dataset in Sheets"],
+ [40,"Learn trend and seasonality: plot a monthly series and spot both"],
+ [40,"Calculate a moving average and compare it with the raw line"]]],
+[10,"Fit a trend line and measure how wrong it is.",[
+ [40,"Fit a straight-line trend in Sheets (SLOPE, INTERCEPT, FORECAST.LINEAR)"],
+ [40,"Learn forecast error measures: MAE and MAPE, and calculate both","","MAE is the average size of the error; MAPE is the same as a percentage."],
+ [40,"Learn overfitting and why we test on data the model has not seen","","Overfitting: a model that memorises old data and predicts new data badly."]]],
+[11,"Prove the forecast works on data it has not seen.",[
+ [40,"Forecast 6 months with trend plus a seasonal adjustment"],
+ [20,"Explain out loud: trend versus seasonality, MAE versus MAPE, what overfitting is","c"],
+ [60,"Hold back the last 6 months, forecast them, compare with the real numbers and write down the error","fp"]]],
+[12,"Make your model something a validator could trust.",[
+ [30,"Learn what model risk and model validation are and why a bank has them","","Validation: an independent team checks that a model is sound."],
+ [30,"List what validators and auditors ask: data, assumptions, limits, testing, who approved"],
+ [30,"Add a version number and a change log to your Skill 1 model"],
+ [10,"Write 5 questions a validator would ask about your model","c"],
+ [20,"Assemble the pack: your model note, assumptions, limits, error results, change log","fp"]]],
+[13,"SQL basics: ask a table simple questions.",[
+ [60,"SQLBolt: SELECT, WHERE, ORDER BY, LIMIT, DISTINCT and aliases"],
+ [60,"SQLBolt: INNER JOIN and LEFT JOIN, and write when they differ"]]],
+[14,"Summarise data with counts, totals and groups.",[
+ [60,"COUNT, SUM, AVG and GROUP BY"],
+ [60,"HAVING, then 5 practice questions mixing GROUP BY and JOIN"]]],
+[15,"Break big queries into readable steps.",[
+ [60,"CTEs with WITH ... AS: rewrite one messy query in steps","","A CTE is a named step inside a query that keeps it readable."],
+ [60,"Subqueries and CASE WHEN: bucket loans by days past due"]]],
+[16,"Window functions: compare each row with the rows around it.",[
+ [60,"Window functions: ROW_NUMBER, RANK, LAG and LEAD","","Window functions calculate across rows without collapsing them."],
+ [60,"Running totals with SUM OVER and month-on-month change"]]],
+[17,"Work with dates and run queries on real data in BigQuery.",[
+ [40,"Date functions: DATE_TRUNC and EXTRACT"],
+ [40,"Open the free BigQuery sandbox, load a csv and run queries on it","","BigQuery is Google's SQL engine; the sandbox is free."],
+ [40,"Write the monthly loan-book query","p"]]],
+[18,"Meet dbt, then pull your SQL together.",[
+ [30,"Learn dbt basics: models, ref and tests, and write one line on what each does","","dbt turns SQL files into tidy, tested tables."],
+ [30,"Write a staging query and a final query in dbt style"],
+ [30,"Write a query that calculates ECL per loan from PD, LGD and EAD columns"],
+ [10,"Answer: INNER versus LEFT JOIN, WHERE versus HAVING, what a CTE is, what a window function does, what dbt ref does","c"],
+ [20,"Put all your queries in one file with comments","fp"]]],
+[19,"Python basics: the building blocks.",[
+ [60,"Google Colab: variables, strings, lists and dictionaries","","Colab runs Python in your browser, free."],
+ [60,"if / else, loops and functions: write a function that calculates ECL for one loan"]]],
+[20,"pandas: spreadsheets in code.",[
+ [60,"pandas: load a csv, filter, group and add calculated columns","","A DataFrame is pandas' spreadsheet-like table."],
+ [60,"numpy basics, then a loop that runs your forecast under 3 scenarios"]]],
+[21,"Forecast with a regression and measure the error.",[
+ [60,"Fit a linear regression and forecast 6 months ahead"],
+ [60,"Calculate MAE and plot actual versus forecast with matplotlib"]]],
+[22,"Predict default risk with logistic regression.",[
+ [60,"Learn logistic regression and fit one to a public loan default dataset","","Logistic regression predicts the chance of a yes or no outcome, such as default."],
+ [60,"Turn the output into a probability of default for each loan","p"]]],
+[23,"Turn it all into one clean notebook.",[
+ [60,"Calculate ECL per loan in Python using your probability of default"],
+ [20,"Explain: what a DataFrame is, what a loop is for, what logistic regression predicts, what MAE tells you","c"],
+ [40,"Tidy the notebook so it runs top to bottom with comments","fp"]]],
+[24,"Build your first Streamlit app.",[
+ [60,"Streamlit basics: build a hello app with a slider and a button","","Streamlit turns a Python script into a web app."],
+ [60,"Add a scenario selector and a chart of actual versus forecast"]]],
+[25,"Make the chart clear and put the app online.",[
+ [40,"Learn clear chart rules: a title, labelled axes, one message per chart"],
+ [20,"Read what Looker is and what it is used for"],
+ [15,"Show the chart to someone: can they say the message in 10 seconds?","c"],
+ [45,"Put the app online with Streamlit Community Cloud and save the link","fp"]]],
+[26,"Put your work on GitHub and learn the names of the tools.",[
+ [40,"GitHub: create a repository, commit your files, make a branch and open a pull request","","A pull request asks to merge your branch's changes into the main code."],
+ [30,"Learn what Google Cloud and BigQuery are and what each is used for"],
+ [20,"Watch an Anaplan overview and write what it is used for in two sentences","","Anaplan is a planning platform for running business models."],
+ [10,"Explain commit, branch and pull request in one line each","c"],
+ [20,"Write the README: what the project does, the files, how to run it","f"]]],
+[27,"Practise explaining numbers in plain English.",[
+ [40,"Read Monzo's tone of voice guide and note 5 rules"],
+ [40,"Explain your forecast to a non-expert in 60 seconds and record it"],
+ [40,"Write a half-page summary of your results for senior managers","p"]]],
+[28,"Rehearse the live case and a presentation to a senior manager.",[
+ [60,"Live case practice: forecast loan losses under 2 scenarios in 45 minutes, then review for 15"],
+ [60,"Present your results in 3 minutes as if to a senior manager, and record it"]]],
+[29,"Prepare your stories and your answer to why Monzo.",[
+ [60,"Write 5 STAR stories: impact, self-starting, teamwork, clear communication, a mistake","","STAR stands for Situation, Task, Action, Result."],
+ [30,"Practise your answer to why Monzo and why this role"],
+ [30,"Mock technical interview with a friend, or recorded on your phone"]]],
+[30,"Final mock interview, resume update and your next step.",[
+ [40,"Mock values interview using your 5 STAR stories"],
+ [20,"Watch a recording and note 3 things to fix","c"],
+ [30,"Update your resume with only what you completed"],
+ [30,"Decide your next step: apply now, or keep building","f"]]]
+];
+
+/* ---------- state ---------- */
+var KEY="monzo-30day-trail-v1";
+var S=load();
+function load(){
+  try{var r=JSON.parse(localStorage.getItem(KEY));if(r&&r.done&&r.notes&&r.start)return r;}catch(e){}
+  return {start:"2026-10-26",done:{},notes:{}};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+/* ---------- dates ---------- */
+function p2(n){return (n<10?"0":"")+n;}
+function iso(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());}
+function parse(s){var a=s.split("-").map(Number);return new Date(a[0],a[1]-1,a[2]);}
+function addDays(d,n){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x;}
+var fLong=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short"});
+var fMon=new Intl.DateTimeFormat("en-GB",{month:"short"});
+function dayDate(n){return addDays(parse(S.start),n-1);}
+function range(a,b){
+  var da=dayDate(a),db=dayDate(b);
+  if(a===b)return da.getDate()+" "+fMon.format(da);
+  if(da.getMonth()===db.getMonth())return da.getDate()+"\u2013"+db.getDate()+" "+fMon.format(db);
+  return da.getDate()+" "+fMon.format(da)+" \u2013 "+db.getDate()+" "+fMon.format(db);
+}
+function todayN(){
+  var t=new Date();t=new Date(t.getFullYear(),t.getMonth(),t.getDate());
+  return Math.round((t-parse(S.start))/86400000)+1;
+}
+function hrs(m){var h=m/60;return (Math.round(h*10)/10).toString();}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+/* ---------- model ---------- */
+var skillOf={};
+SKILLS.forEach(function(s){for(var n=s.from;n<=s.to;n++)skillOf[n]=s;});
+var dayInfo=DAYS.map(function(d){
+  var tasks=d[2].map(function(t,i){return {id:"d"+d[0]+"t"+i,min:t[0],text:t[1],flag:t[2]||"",hint:t[3]||""};});
+  return {n:d[0],note:d[1],tasks:tasks,min:tasks.reduce(function(a,t){return a+t.min;},0)};
+});
+var totalTasks=0,totalMin=0;
+dayInfo.forEach(function(d){totalTasks+=d.tasks.length;totalMin+=d.min;});
+
+/* ---------- build ---------- */
+var BADGE={c:["Checkpoint","c"],f:["Finish","f"],p:["Save as proof","p"]};
+function build(){
+  var html="";
+  SKILLS.forEach(function(s){
+    html+='<section class="skill" id="skill-'+s.id+'" style="--c:'+s.c+'">'
+      +'<div class="skillhead"><h2>'+s.id+". "+esc(s.name)+'</h2>'
+      +'<div class="skillmeta"><span data-range="'+s.from+","+s.to+'"></span><span>'+s.hours+' hours</span><span data-sprog="'+s.id+'"></span></div>'
+      +'<div class="bar"><i data-sbar="'+s.id+'"></i></div></div>'
+      +'<p class="about">'+esc(s.about)+'</p>'
+      +'<p class="finish"><b>Finish line:</b> '+esc(s.finish)+'</p>'
+      +'<p class="skip"><b>Skip for this job:</b> '+esc(s.skip)+'</p>';
+    dayInfo.filter(function(d){return d.n>=s.from&&d.n<=s.to;}).forEach(function(d){
+      html+='<article class="day" id="day-'+d.n+'" data-n="'+d.n+'" data-day="'+d.n+'">'
+        +'<div class="dayhead"><h3>Day '+d.n+' \u00b7 <span data-dd="'+d.n+'"></span></h3>'
+        +'<span class="daymeta">'+hrs(d.min)+' h \u00b7 <span data-dcount="'+d.n+'"></span></span>'
+        +'<span class="tag" data-today="'+d.n+'" hidden>Today</span></div>'
+        +'<p class="daynote">'+esc(d.note)+'</p><ul class="tasks">';
+      d.tasks.forEach(function(t){
+        var b="";
+        for(var i=0;i<t.flag.length;i++){var x=BADGE[t.flag[i]];if(x)b+='<span class="b '+x[1]+'">'+x[0]+'</span>';}
+        html+='<li><label class="task" data-task="'+t.id+'">'
+          +'<input type="checkbox" class="tk" data-id="'+t.id+'" data-day="'+d.n+'">'
+          +'<span class="tbody"><span class="ttext">'+esc(t.text)+'</span>'
+          +(t.hint?'<span class="hint">'+esc(t.hint)+'</span>':'')
+          +(b?'<span class="badges">'+b+'</span>':'')+'</span>'
+          +'<span class="tmeta">'+t.min+' min<span class="doneon" data-on="'+t.id+'"></span></span></label></li>';
+      });
+      var note=S.notes[d.n]||"";
+      html+='</ul><details class="notes"'+(note?" open":"")+'><summary>Notes for day '+d.n+'</summary>'
+        +'<textarea data-note="'+d.n+'" placeholder="What did you learn? What was hard?">'+esc(note)+'</textarea></details></article>';
+    });
+    html+='</section>';
+  });
+  document.getElementById("main").innerHTML=html;
+
+  var tr="";
+  dayInfo.forEach(function(d){
+    tr+='<button type="button" class="dot" data-jump="'+d.n+'" style="--c:'+skillOf[d.n].c+'" aria-label="Day '+d.n+', '+esc(skillOf[d.n].name)+'">'+d.n+'</button>';
+  });
+  document.getElementById("trail").innerHTML=tr;
+}
+
+/* ---------- refresh ---------- */
+function refresh(){
+  var tn=todayN(),doneT=0,doneMin=0,daysDone=0;
+  var sDone={},sTot={};
+  SKILLS.forEach(function(s){sDone[s.id]=0;sTot[s.id]=0;});
+  dayInfo.forEach(function(d){
+    var el=document.getElementById("day-"+d.n);
+    var n=0,m=0;
+    d.tasks.forEach(function(t){
+      var on=!!S.done[t.id];
+      var row=el.querySelector('[data-task="'+t.id+'"]');
+      var cb=row.querySelector("input");
+      cb.checked=on;
+      row.classList.toggle("on",on);
+      row.querySelector("[data-on]").textContent=on?"done "+fmtShortDate(S.done[t.id]):"";
+      if(on){n++;m+=t.min;}
+    });
+    var full=n===d.tasks.length;
+    el.classList.toggle("done",full);
+    el.classList.toggle("today",d.n===tn);
+    el.querySelector("[data-today]").hidden=(d.n!==tn);
+    el.querySelector("[data-dcount]").textContent=n+"/"+d.tasks.length+" done";
+    el.querySelector("[data-dd]").textContent=fLong.format(dayDate(d.n));
+    doneT+=n;doneMin+=m;if(full)daysDone++;
+    var sk=skillOf[d.n];sDone[sk.id]+=n;sTot[sk.id]+=d.tasks.length;
+    var dot=document.querySelector('[data-jump="'+d.n+'"]');
+    var pct=Math.round(100*n/d.tasks.length);
+    dot.style.setProperty("--p",pct);
+    dot.classList.toggle("full",full);
+    dot.classList.toggle("today",d.n===tn);
+    dot.title="Day "+d.n+" \u00b7 "+fLong.format(dayDate(d.n))+" \u00b7 "+n+"/"+d.tasks.length+" tasks";
+  });
+  SKILLS.forEach(function(s){
+    document.querySelector('[data-sprog="'+s.id+'"]').textContent=sDone[s.id]+"/"+sTot[s.id]+" tasks";
+    document.querySelector('[data-sbar="'+s.id+'"]').style.width=Math.round(100*sDone[s.id]/sTot[s.id])+"%";
+    var r=document.querySelector('#skill-'+s.id+' [data-range]');
+    r.textContent=(s.from===s.to?"Day "+s.from:"Days "+s.from+"\u2013"+s.to)+" \u00b7 "+range(s.from,s.to);
+  });
+  document.getElementById("sTasks").textContent=doneT+"/"+totalTasks;
+  document.getElementById("sHours").textContent=hrs(doneMin)+"/"+hrs(totalMin);
+  document.getElementById("sDays").textContent=daysDone+"/30";
+  document.getElementById("sPct").textContent=Math.round(100*doneMin/totalMin)+"%";
+  document.getElementById("sub").textContent="Learn only what the job uses. Nine skills, about 2 hours a day, "+range(1,30)+". Tick tasks as you finish them; your progress is saved on this device.";
+  document.getElementById("start").value=S.start;
+}
+function fmtShortDate(s){var d=parse(s);return d.getDate()+" "+fMon.format(d);}
+
+/* ---------- events ---------- */
+document.addEventListener("change",function(e){
+  var t=e.target;
+  if(t.classList&&t.classList.contains("tk")){
+    if(t.checked)S.done[t.dataset.id]=iso(new Date());else delete S.done[t.dataset.id];
+    save();refresh();
+  }
+});
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(t.dataset&&t.dataset.note){S.notes[t.dataset.note]=t.value;save();}
+});
+document.addEventListener("click",function(e){
+  var j=e.target.closest&&e.target.closest("[data-jump]");
+  if(j)goDay(+j.dataset.jump);
+});
+function goDay(n){
+  var el=document.getElementById("day-"+n);
+  if(el){document.body.classList.remove("hide-done");document.getElementById("hideDone").checked=false;el.scrollIntoView({block:"start"});}
+}
+document.getElementById("jump").addEventListener("click",function(){
+  var n=todayN();if(n<1)n=1;if(n>30)n=30;goDay(n);
+});
+document.getElementById("hideDone").addEventListener("change",function(e){
+  document.body.classList.toggle("hide-done",e.target.checked);
+});
+document.getElementById("start").addEventListener("change",function(e){
+  if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)){S.start=e.target.value;save();refresh();}
+});
+document.getElementById("reset").addEventListener("click",function(){
+  if(confirm("Reset all ticks and notes? This cannot be undone.")){
+    S={start:S.start,done:{},notes:{}};save();build();refresh();
+  }
+});
+document.getElementById("copy").addEventListener("click",function(){
+  var btn=this,lines=[];
+  var doneT=0,doneMin=0;
+  dayInfo.forEach(function(d){d.tasks.forEach(function(t){if(S.done[t.id]){doneT++;doneMin+=t.min;}});});
+  lines.push("Monzo forecasting 30-day trail: progress on "+fLong.format(new Date())+" "+new Date().getFullYear());
+  lines.push("Tasks "+doneT+"/"+totalTasks+" \u00b7 Hours "+hrs(doneMin)+"/"+hrs(totalMin));
+  lines.push("");
+  SKILLS.forEach(function(s){
+    var a=0,b=0,last="";
+    dayInfo.forEach(function(d){if(d.n>=s.from&&d.n<=s.to)d.tasks.forEach(function(t){b++;if(S.done[t.id]){a++;if(S.done[t.id]>last)last=S.done[t.id];}});});
+    lines.push(s.id+". "+s.name+": "+a+"/"+b+" tasks"+(last?" (last ticked "+fmtShortDate(last)+")":""));
+  });
+  var notes=Object.keys(S.notes).filter(function(k){return S.notes[k];}).sort(function(a,b){return a-b;});
+  if(notes.length){lines.push("");lines.push("Notes");notes.forEach(function(k){lines.push("Day "+k+": "+S.notes[k]);});}
+  var text=lines.join("\n");
+  function ok(){var o=btn.textContent;btn.textContent="Copied";setTimeout(function(){btn.textContent=o;},1600);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(ok,function(){fallback();});}
+  else fallback();
+  function fallback(){
+    var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");ok();}catch(err){window.prompt("Copy this summary:",text);}
+    document.body.removeChild(ta);
+  }
+});
+
+build();refresh();
+})();
+</script>
+</body>
+</html>
